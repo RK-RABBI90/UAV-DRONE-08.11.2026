@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SkyDeck – Drone Control & Learn</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9f1f5;--surface:#fff;--ink:#102a37;--muted:#5b7482;--line:#cddde6;--accent:#1f5fff;--accent-ink:#fff;--warn:#e08a00;--bad:#d03a3a;--grid:#b9ccd6;--sky:#d7e8f0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a22;--surface:#142632;--ink:#e6f1f6;--muted:#8ba5b3;--line:#244051;--accent:#5b8cff;--accent-ink:#06142e;--warn:#f0a73a;--bad:#ff6b6b;--grid:#223a49;--sky:#10222c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1a22;--surface:#142632;--ink:#e6f1f6;--muted:#8ba5b3;--line:#244051;--accent:#5b8cff;--accent-ink:#06142e;--warn:#f0a73a;--bad:#ff6b6b;--grid:#223a49;--sky:#10222c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Sora,system-ui,sans-serif;font-size:15px;line-height:1.5}
+main{max-width:560px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:4px 0 12px}
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);font:600 14px Sora,system-ui,sans-serif;padding:10px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.feed{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--sky)}
+canvas{display:block;width:100%;height:240px;touch-action:none}
+.hud{position:absolute;left:8px;right:8px;top:8px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;font-size:12px;font-weight:600;pointer-events:none}
+.hud span{background:color-mix(in srgb,var(--surface) 85%,transparent);padding:3px 8px;border-radius:8px}
+.tele{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:10px 0}
+.tele div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.tele small{display:block;color:var(--muted);font-size:11px}
+.tele b{font-size:16px}
+.sticks{display:flex;justify-content:space-around;margin:14px 0}
+.stick{position:relative;width:130px;height:130px;border-radius:50%;background:var(--surface);border:2px solid var(--line);touch-action:none}
+.stick i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--accent);opacity:.9}
+.stick em{position:absolute;left:-20px;right:-20px;bottom:-40px;text-align:center;font-style:normal;font-size:11px;color:var(--muted)}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:52px}
+.btns button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 14px Sora,system-ui,sans-serif;padding:12px 6px;border-radius:10px;cursor:pointer}
+.btns .go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.note{color:var(--muted);font-size:12.5px;margin-top:12px}
+#search{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:15px Sora,system-ui,sans-serif}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.chips button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:20px;padding:6px 12px;font:13px Sora,system-ui,sans-serif;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.card h3{margin:0 0 4px;font-size:15px}.card p{margin:0;color:var(--muted)}.card small{color:var(--accent);font-weight:600}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<h1>SkyDeck</h1>
+<div class="tabs" role="tablist">
+<button role="tab" id="t1" aria-selected="true">Fly (ফ্লাই) ওড়া</button>
+<button role="tab" id="t2" aria-selected="false">Learn (লার্ন) শেখা</button>
+</div>
+
+<section id="fly">
+<div class="feed"><canvas id="cv"></canvas>
+<div class="hud"><span id="mode">DISARMED (ডিসআর্মড) নিষ্ক্রিয়</span><span id="gps">GPS (জিপিএস) অবস্থান: 12</span></div></div>
+<div class="tele">
+<div><small>Altitude (অল্টিটিউড) উচ্চতা</small><b id="alt">0.0 m</b></div>
+<div><small>Speed (স্পিড) গতি</small><b id="spd">0.0 m/s</b></div>
+<div><small>Battery (ব্যাটারি) চার্জ</small><b id="bat">100%</b></div>
+<div><small>Home (হোম) বাড়ি, dist (ডিস্ট) দূরত্ব</small><b id="hd">0 m</b></div>
+</div>
+<div class="sticks">
+<div class="stick" id="sL"><i></i><em>Throttle (থ্রটল) গতি ↕<br>Yaw (ইয়ো) ঘোরা ↔</em></div>
+<div class="stick" id="sR"><i></i><em>Pitch (পিচ) ঝোঁক ↕<br>Roll (রোল) কাত ↔</em></div>
+</div>
+<div class="btns">
+<button class="go" id="bTake">Takeoff (টেকঅফ) ওঠা</button>
+<button id="bLand">Land (ল্যান্ড) নামা</button>
+<button id="bRth">Return home (রিটার্ন হোম) ফেরা</button>
+</div>
+<p class="note">Eta ekta simulator (সিমুলেটর) নকল-যন্ত্র – asol drone (ড্রোন) lage na. Asol drone-er jonno code-er <code>sendToDrone()</code> function-e MAVLink (ম্যাভলিংক) bridge (ব্রিজ) সেতু jora hoy.</p>
+</section>
+
+<section id="learn" hidden>
+<input id="search" type="search" placeholder="Search (সার্চ) খোঁজা: motor (মোটর) ইঞ্জিন…" aria-label="Search">
+<div class="chips" id="chips"></div>
+<div id="list"></div>
+</section>
+</main>
+
+<script>
+// ---------- Drone link (replace this to talk to a real drone) ----------
+// Real drone: run a small MAVLink-to-WebSocket bridge (e.g. mavlink2rest or MAVProxy)
+// on a companion computer, then send commands here with ws.send(JSON.stringify(cmd)).
+function sendToDrone(cmd){ /* console.log(cmd); */ }
+
+// ---------- Tabs ----------
+const $=id=>document.getElementById(id);
+function tab(n){
+  $('fly').hidden=n!==1;$('learn').hidden=n!==2;
+  $('t1').setAttribute('aria-selected',n===1);$('t2').setAttribute('aria-selected',n===2);
+}
+$('t1').onclick=()=>tab(1);$('t2').onclick=()=>tab(2);
+
+// ---------- Joysticks ----------
+function stick(el){
+  const s={x:0,y:0},k=el.querySelector('i');let id=null;
+  function move(e){
+    const r=el.getBoundingClientRect(),R=r.width/2-26;
+    let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+    const d=Math.hypot(dx,dy);if(d>R){dx*=R/d;dy*=R/d}
+    s.x=dx/R;s.y=-dy/R;k.style.transform=`translate(${dx}px,${dy}px)`;
+  }
+  function end(){id=null;s.x=s.y=0;k.style.transform=''}
+  el.addEventListener('pointerdown',e=>{id=e.pointerId;el.setPointerCapture(id);move(e)});
+  el.addEventListener('pointermove',e=>{if(e.pointerId===id)move(e)});
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+  return s;
+}
+const L=stick($('sL')),R=stick($('sR'));
+
+// ---------- Simulator ----------
+const D={x:0,y:0,alt:0,h:0,bat:100,spd:0,mode:'DISARMED'};
+const MMN={'DISARMED':'নিষ্ক্রিয়','TAKEOFF':'ওঠা','MANUAL':'হাতে-চালানো','LANDING':'নামছে','LANDED':'নেমেছে','RETURN HOME':'ফিরছে'};
+const MBN={'DISARMED':'ডিসআর্মড','TAKEOFF':'টেকঅফ','MANUAL':'ম্যানুয়াল','LANDING':'ল্যান্ডিং','LANDED':'ল্যান্ডেড','RETURN HOME':'রিটার্ন হোম'};
+function setMode(m){D.mode=m;$('mode').textContent=m+' ('+MBN[m]+') '+MMN[m];sendToDrone({mode:m})}
+$('bTake').onclick=()=>{if(D.mode==='DISARMED'||D.mode==='LANDED'){D.bat=Math.max(D.bat,0);setMode('TAKEOFF')}};
+$('bLand').onclick=()=>{if(D.alt>0)setMode('LANDING')};
+$('bRth').onclick=()=>{if(D.alt>0)setMode('RETURN HOME')};
+
+const cv=$('cv'),g=cv.getContext('2d');
+function fit(){const r=devicePixelRatio||1;cv.width=cv.clientWidth*r;cv.height=cv.clientHeight*r;g.setTransform(r,0,0,r,0,0)}
+addEventListener('resize',fit);fit();
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function step(dt){
+  let thr=0,yaw=0,pit=0,rol=0;
+  if(D.mode==='MANUAL'){thr=L.y;yaw=L.x;pit=R.y;rol=R.x}
+  if(D.mode==='TAKEOFF'){thr=1;if(D.alt>=5)setMode('MANUAL')}
+  if(D.mode==='LANDING'){thr=-.5;if(D.alt<=0){setMode('LANDED')}}
+  if(D.mode==='RETURN HOME'){
+    const dist=Math.hypot(D.x,D.y);
+    const want=Math.atan2(-D.x,D.y)*180/Math.PI*-1; // heading toward home
+    let diff=((Math.atan2(-D.x,D.y)*-1*180/Math.PI)-D.h+540)%360-180;
+    yaw=Math.max(-1,Math.min(1,diff/30));
+    if(Math.abs(diff)<25&&dist>1)pit=.8;
+    thr=D.alt<10&&dist>1?.5:0;
+    if(dist<=1){setMode('LANDING')}
+  }
+  if(D.mode!=='DISARMED'&&D.mode!=='LANDED'){
+    D.alt=Math.max(0,D.alt+thr*3*dt);
+    if(D.alt<=0&&D.mode==='MANUAL'&&thr<=0){/* on ground */}
+    D.h=(D.h+yaw*90*dt+360)%360;
+    const hr=D.h*Math.PI/180,f=pit*8,s=rol*8;
+    D.x+=(f*Math.sin(hr)+s*Math.cos(hr))*dt;
+    D.y+=(f*Math.cos(hr)-s*Math.sin(hr))*dt;
+    D.spd=Math.hypot(f,s);
+    D.bat=Math.max(0,D.bat-(0.12+D.spd*0.01)*dt);
+    if(D.bat<=0&&D.mode!=='LANDING')setMode('LANDING');
+  }else D.spd=0;
+}
+
+function draw(){
+  const w=cv.clientWidth,h=cv.clientHeight,sc=8,cx=w/2,cy=h/2;
+  g.clearRect(0,0,w,h);g.fillStyle=css('--sky');g.fillRect(0,0,w,h);
+  g.strokeStyle=css('--grid');g.lineWidth=1;
+  const gs=sc*5,ox=((-D.x*sc)%gs+gs)%gs,oy=((D.y*sc)%gs+gs)%gs;
+  g.beginPath();
+  for(let x=ox;x<w;x+=gs){g.moveTo(x,0);g.lineTo(x,h)}
+  for(let y=oy;y<h;y+=gs){g.moveTo(0,y);g.lineTo(w,y)}
+  g.stroke();
+  // home marker
+  const hx=cx+(0-D.x)*sc,hy=cy+(D.y-0)*sc;
+  g.strokeStyle=css('--warn');g.lineWidth=2;g.strokeRect(hx-9,hy-9,18,18);
+  g.fillStyle=css('--warn');g.font='600 11px Sora,sans-serif';g.fillText('H',hx-3,hy+4);
+  // shadow
+  const sh=1+D.alt*.03;g.fillStyle='rgba(0,0,0,.18)';
+  g.beginPath();g.ellipse(cx+D.alt*.4,cy+D.alt*.4,16*sh,16*sh,0,0,7);g.fill();
+  // drone
+  g.save();g.translate(cx,cy);g.rotate(D.h*Math.PI/180);
+  const sz=1+D.alt*.015;g.scale(sz,sz);
+  g.strokeStyle=css('--ink');g.lineWidth=3;
+  g.beginPath();g.moveTo(-14,-14);g.lineTo(14,14);g.moveTo(14,-14);g.lineTo(-14,14);g.stroke();
+  g.fillStyle=css('--ink');[[-14,-14],[14,-14],[-14,14],[14,14]].forEach(p=>{g.beginPath();g.arc(p[0],p[1],6,0,7);g.fill()});
+  g.fillStyle=css('--accent');g.beginPath();g.moveTo(0,-12);g.lineTo(6,6);g.lineTo(-6,6);g.fill();
+  g.restore();
+}
+
+function hud(){
+  $('alt').textContent=D.alt.toFixed(1)+' m';
+  $('spd').textContent=D.spd.toFixed(1)+' m/s';
+  $('bat').textContent=Math.round(D.bat)+'%';
+  $('bat').style.color=D.bat<20?css('--bad'):'';
+  $('hd').textContent=Math.round(Math.hypot(D.x,D.y))+' m';
+}
+
+let last=performance.now();
+function loop(t){
+  const dt=Math.min(.05,(t-last)/1000);last=t;
+  step(dt);draw();hud();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ---------- Learn ----------
+const BN={All:['অল','সব'],Physics:['ফিজিক্স','পদার্থবিদ্যা'],Parts:['পার্টস','অংশ'],Control:['কন্ট্রোল','নিয়ন্ত্রণ'],Rules:['রুলস','নিয়ম']};
+const bw=w=>BN[w]?w+' ('+BN[w][0]+') '+BN[w][1]:w;
+const topics=[
+{c:'Physics',t:'Lift & thrust (লিফট অ্যান্ড থ্রাস্ট) তোলা ও ঠেলা',b:'Propeller (প্রোপেলার) পাখা niche-er dike batas thele drone (ড্রোন) মনুষ্যবিহীন-বিমান-ke upore tole. Thrust (থ্রাস্ট) ঠেলা-বল drone-er weight (ওয়েট) ওজন-er cheye beshi hole drone ওঠে. Bhalo rule (রুল) নিয়ম: thrust weight-er 2 gun hole bhalo.'},
+{c:'Physics',t:'Drag & hover (ড্র্যাগ অ্যান্ড হোভার) বাধা ও ভাসা',b:'Hover (হোভার) ভাসা-e thrust thik weight-er soman. Egiye gele batas-er badha, mane drag (ড্র্যাগ) বাধা, bare, tai battery (ব্যাটারি) চার্জ beshi khoroch hoy.'},
+{c:'Parts',t:'Brushless motor (ব্রাশলেস মোটর) ব্রাশবিহীন ইঞ্জিন',b:'Drone-er prothi arm (আর্ম) বাহু-e ekta motor (মোটর) ইঞ্জিন thake. KV (কেভি) rating (রেটিং) মান = volt (ভোল্ট) বিদ্যুৎচাপ-e koto RPM (আরপিএম) ঘুরপাক. Boro prop (প্রপ) পাখা-e kom KV, chhoto prop-e beshi KV bhalo.'},
+{c:'Parts',t:'Propeller (প্রোপেলার) পাখা',b:'Size (সাইজ) আকার (jemon 5 inch (ইঞ্চি) ইঞ্চি) ar pitch (পিচ) ঢাল duto-i thrust ar speed (স্পিড) গতি thik kore. Duto prop CW (ক্লকওয়াইজ) ডানদিকে, duto CCW (কাউন্টার-ক্লকওয়াইজ) বামদিকে ghore, jate drone ghure na jay.'},
+{c:'Parts',t:'ESC (ইএসসি) গতি-নিয়ন্ত্রক',b:'Electronic Speed Controller (ইলেকট্রনিক স্পিড কন্ট্রোলার) বৈদ্যুতিক গতি-নিয়ন্ত্রক. Flight controller (ফ্লাইট কন্ট্রোলার) উড়ান-নিয়ন্ত্রক-er signal (সিগন্যাল) সংকেত niye motor-er speed thik kore. Motor-er max (ম্যাক্স) সর্বোচ্চ current (কারেন্ট) বিদ্যুৎ-er cheye boro rating nao.'},
+{c:'Parts',t:'Flight controller (ফ্লাইট কন্ট্রোলার) উড়ান-নিয়ন্ত্রক',b:'Drone-er “mostishko” মস্তিষ্ক. Gyro (জাইরো) ঘূর্ণি-মাপক ar accelerometer (অ্যাক্সেলেরোমিটার) ত্বরণ-মাপক theke drone-er angle (অ্যাঙ্গেল) কোণ jene motor-er speed ekdom thik kore. ArduPilot (আর্ডুপাইলট), PX4 (পিএক্সফোর), Betaflight (বেটাফ্লাইট) popular (পপুলার) জনপ্রিয় firmware (ফার্মওয়্যার) ভেতরের-সফটওয়্যার.'},
+{c:'Parts',t:'LiPo battery (লিপো ব্যাটারি) লিথিয়াম ব্যাটারি',b:'Cell (সেল) কোষ count (কাউন্ট) সংখ্যা (3S, 4S) volt (ভোল্ট) বিদ্যুৎচাপ thik kore, mAh (মিলিঅ্যাম্পিয়ার-আওয়ার) ধারণক্ষমতা flight time (ফ্লাইট টাইম) উড়ার-সময়. Kokhono 3.5 V/cell-er niche namabe na, ar charge (চার্জ) ভরা-er somoy chere jabe na.'},
+{c:'Control',t:'PID tuning (পিআইডি টিউনিং) সুর-বাঁধা',b:'P (পি) বর্তমান = ekhon koto bhul, I (আই) জমা = joma bhul, D (ডি) পরিবর্তন = bhul-er poriborton. Thik na hole drone kape ba dhire sara dey. Ek ek kore chhoto change (চেঞ্জ) বদল korte hoy.'},
+{c:'Control',t:'GPS & failsafe (জিপিএস অ্যান্ড ফেইলসেফ) অবস্থান ও নিরাপত্তা-ব্যবস্থা',b:'GPS (জিপিএস) অবস্থান-নির্ণয় thakle drone position (পজিশন) জায়গা dhore rakhe. Signal ba battery gele Return-to-Home (রিটার্ন-টু-হোম) বাড়ি-ফেরা chalu hoy. Ura-r age failsafe (ফেইলসেফ) নিরাপত্তা-ব্যবস্থা thik ache kina dekho.'},
+{c:'Control',t:'MAVLink (ম্যাভলিংক) ড্রোনের-ভাষা',b:'ArduPilot/PX4 drone-er sathe kotha bolar protocol (প্রোটোকল) নিয়ম. App (অ্যাপ) অ্যাপ্লিকেশন theke arm (আর্ম) চালু, takeoff (টেকঅফ) ওঠা, goto (গো-টু) যাও, telemetry (টেলিমেট্রি) দূর-থেকে-তথ্য sob MAVLink message (মেসেজ) বার্তা diye hoy.'},
+{c:'Rules',t:'Ura-nor niyom',b:'Desh-er civil aviation authority (সিভিল অ্যাভিয়েশন অথরিটি) বেসামরিক-বিমান-কর্তৃপক্ষ-r niyom dekho: kon jaygay ura jabe na, koto uchute, registration (রেজিস্ট্রেশন) নিবন্ধন lagbe kina. Airport (এয়ারপোর্ট) বিমানবন্দর, manush-er bheer ar nijer drone-er dristi-r baire uro na.'}
+];
+const cats=['All',...new Set(topics.map(t=>t.c))];let cat='All';
+function render(){
+  const q=$('search').value.trim().toLowerCase();
+  const r=topics.filter(t=>(cat==='All'||t.c===cat)&&(t.t+' '+t.b+' '+t.c).toLowerCase().includes(q));
+  $('list').innerHTML=r.length?r.map(t=>`<div class="card"><small>${bw(t.c)}</small><h3>${t.t}</h3><p>${t.b}</p></div>`).join(''):'<p class="note">Kichu pawa jayni. Onno shobdo diye search (সার্চ) খোঁজা koro.</p>';
+  $('chips').innerHTML=cats.map(c=>`<button aria-pressed="${c===cat}" data-c="${c}">${bw(c)}</button>`).join('');
+}
+$('chips').onclick=e=>{const c=e.target.dataset.c;if(c){cat=c;render()}};
+$('search').oninput=render;render();
+</script>
+</body>
+</html>
