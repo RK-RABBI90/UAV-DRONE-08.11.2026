@@ -25,7 +25,7 @@ main{max-width:560px;margin:0 auto;padding:14px}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
 button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .feed{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--sky)}
-canvas{display:block;width:100%;height:240px;touch-action:none}
+canvas{display:block;width:100%;height:380px;touch-action:none}
 .hud{position:absolute;left:8px;right:8px;top:8px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px;font-size:12px;font-weight:600;pointer-events:none}
 .hud span{background:color-mix(in srgb,var(--surface) 85%,transparent);padding:3px 8px;border-radius:8px}
 .tele{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:10px 0}
@@ -52,6 +52,12 @@ canvas{display:block;width:100%;height:240px;touch-action:none}
 #zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);overflow:auto;z-index:50;padding-top:env(safe-area-inset-top,0px)}
 #zoom img{width:100%;display:block}#zoom img.big{width:250%;max-width:none}
 #zoom button{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:51;border:0;border-radius:10px;padding:10px 14px;background:#fff;color:#000;font:600 14px Sora,system-ui,sans-serif}
+#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.btns.two{grid-template-columns:1fr 1fr;margin-top:8px}
+.conn{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:12px}
+.conn summary{font-weight:600;cursor:pointer}.conn label{display:block;margin:10px 0;font-size:13px;color:var(--muted)}
+.conn input:not([type=checkbox]){width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:14px Sora,system-ui,sans-serif;margin-top:4px}
+.conn .chk{display:flex;gap:8px;align-items:flex-start;color:var(--ink)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -64,7 +70,7 @@ canvas{display:block;width:100%;height:240px;touch-action:none}
 </div>
 
 <section id="fly">
-<div class="feed"><canvas id="cv"></canvas>
+<div class="feed"><canvas id="cv"></canvas><img id="vid" alt="Live video" hidden>
 <div class="hud"><span id="mode">DISARMED (ডিসআর্মড) নিষ্ক্রিয়</span><span id="gps">GPS (জিপিএস) অবস্থান: 12</span></div></div>
 <div class="tele">
 <div><small>Altitude (অল্টিটিউড) উচ্চতা</small><b id="alt">0.0 m</b></div>
@@ -81,7 +87,16 @@ canvas{display:block;width:100%;height:240px;touch-action:none}
 <button id="bLand">Land (ল্যান্ড) নামা</button>
 <button id="bRth">Return home (রিটার্ন হোম) ফেরা</button>
 </div>
-<p class="note">Eta ekta simulator (সিমুলেটর) নকল-যন্ত্র – asol drone (ড্রোন) lage na. Asol drone-er jonno code-er <code>sendToDrone()</code> function-e MAVLink (ম্যাভলিংক) bridge (ব্রিজ) সেতু jora hoy.</p>
+<div class="btns two"><button id="bMan">Manual (ম্যানুয়াল) হাতে-চালানো</button><button id="bDis">Disarm (ডিসআর্ম) বন্ধ</button></div>
+<details class="conn"><summary>Real drone (রিয়াল ড্রোন) আসল ড্রোন · Connect (কানেক্ট) যুক্ত</summary>
+<label>Bridge (ব্রিজ) সেতু URL<input id="wsurl" inputmode="url" autocapitalize="off"></label>
+<label>Video (ভিডিও) URL<input id="vidurl" inputmode="url" autocapitalize="off"></label>
+<label class="chk"><input type="checkbox" id="safe"><span>Propeller (প্রোপেলার) খোলা ba open area (ওপেন এরিয়া) খোলা জায়গা — ami nishchit (নিশ্চিত).</span></label>
+<div class="btns two"><button class="go" id="bConn">Connect (কানেক্ট) যুক্ত</button><button id="bDisc">Disconnect (ডিসকানেক্ট) বিচ্ছিন্ন</button></div>
+<p id="cstat" class="note">Not connected (নট কানেক্টেড) যুক্ত নয়</p>
+<p class="note">Keyboard (কীবোর্ড): W/S throttle, A/D yaw, Arrow keys pitch/roll. Gamepad (গেমপ্যাড) auto.</p>
+</details>
+<p class="note">Game (গেম) খেলা: Takeoff (টেকঅফ) chapo, ring (রিং) diye uro, Home (হোম) pad-e land koro. Asol drone (ড্রোন) lage na. Asol drone-er jonno code-er <code>sendToDrone()</code> function-e MAVLink (ম্যাভলিংক) bridge (ব্রিজ) সেতু jora hoy.</p>
 </section>
 
 <section id="learn" hidden>
@@ -128,9 +143,9 @@ const D={x:0,y:0,alt:0,h:0,bat:100,spd:0,mode:'DISARMED'};
 const MMN={'DISARMED':'নিষ্ক্রিয়','TAKEOFF':'ওঠা','MANUAL':'হাতে-চালানো','LANDING':'নামছে','LANDED':'নেমেছে','RETURN HOME':'ফিরছে'};
 const MBN={'DISARMED':'ডিসআর্মড','TAKEOFF':'টেকঅফ','MANUAL':'ম্যানুয়াল','LANDING':'ল্যান্ডিং','LANDED':'ল্যান্ডেড','RETURN HOME':'রিটার্ন হোম'};
 function setMode(m){D.mode=m;$('mode').textContent=m+' ('+MBN[m]+') '+MMN[m];sendToDrone({mode:m})}
-$('bTake').onclick=()=>{if(D.mode==='DISARMED'||D.mode==='LANDED'){D.bat=Math.max(D.bat,0);setMode('TAKEOFF')}};
-$('bLand').onclick=()=>{if(D.alt>0)setMode('LANDING')};
-$('bRth').onclick=()=>{if(D.alt>0)setMode('RETURN HOME')};
+$('bTake').onclick=()=>{if(real)return send({t:'cmd',c:'takeoff'});if(D.mode==='DISARMED'||D.mode==='LANDED'){D.bat=Math.max(D.bat,0);setMode('TAKEOFF')}};
+$('bLand').onclick=()=>{if(real)return send({t:'cmd',c:'land'});if(D.alt>0)setMode('LANDING')};
+$('bRth').onclick=()=>{if(real)return send({t:'cmd',c:'rth'});if(D.alt>0)setMode('RETURN HOME')};
 
 const cv=$('cv'),g=cv.getContext('2d');
 function fit(){const r=devicePixelRatio||1;cv.width=cv.clientWidth*r;cv.height=cv.clientHeight*r;g.setTransform(r,0,0,r,0,0)}
@@ -139,7 +154,7 @@ const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim
 
 function step(dt){
   let thr=0,yaw=0,pit=0,rol=0;
-  if(D.mode==='MANUAL'){thr=L.y;yaw=L.x;pit=R.y;rol=R.x}
+  if(D.mode==='MANUAL'){const q=inp();thr=q.thr;yaw=q.yaw;pit=q.pit;rol=q.rol}
   if(D.mode==='TAKEOFF'){thr=1;if(D.alt>=5)setMode('MANUAL')}
   if(D.mode==='LANDING'){thr=-.5;if(D.alt<=0){setMode('LANDED')}}
   if(D.mode==='RETURN HOME'){
@@ -165,31 +180,55 @@ function step(dt){
 }
 
 function draw(){
-  const w=cv.clientWidth,h=cv.clientHeight,sc=8,cx=w/2,cy=h/2;
-  g.clearRect(0,0,w,h);g.fillStyle=css('--sky');g.fillRect(0,0,w,h);
-  g.strokeStyle=css('--grid');g.lineWidth=1;
-  const gs=sc*5,ox=((-D.x*sc)%gs+gs)%gs,oy=((D.y*sc)%gs+gs)%gs;
-  g.beginPath();
-  for(let x=ox;x<w;x+=gs){g.moveTo(x,0);g.lineTo(x,h)}
-  for(let y=oy;y<h;y+=gs){g.moveTo(0,y);g.lineTo(w,y)}
-  g.stroke();
-  // home marker
-  const hx=cx+(0-D.x)*sc,hy=cy+(D.y-0)*sc;
-  g.strokeStyle=css('--warn');g.lineWidth=2;g.strokeRect(hx-9,hy-9,18,18);
-  g.fillStyle=css('--warn');g.font='600 11px Sora,sans-serif';g.fillText('H',hx-3,hy+4);
-  // shadow
-  const sh=1+D.alt*.03;g.fillStyle='rgba(0,0,0,.18)';
-  g.beginPath();g.ellipse(cx+D.alt*.4,cy+D.alt*.4,16*sh,16*sh,0,0,7);g.fill();
-  // drone
-  g.save();g.translate(cx,cy);g.rotate(D.h*Math.PI/180);
-  const sz=1+D.alt*.015;g.scale(sz,sz);
-  g.strokeStyle=css('--ink');g.lineWidth=3;
-  g.beginPath();g.moveTo(-14,-14);g.lineTo(14,14);g.moveTo(14,-14);g.lineTo(-14,14);g.stroke();
-  g.fillStyle=css('--ink');[[-14,-14],[14,-14],[-14,14],[14,14]].forEach(p=>{g.beginPath();g.arc(p[0],p[1],6,0,7);g.fill()});
-  g.fillStyle=css('--accent');g.beginPath();g.moveTo(0,-12);g.lineTo(6,6);g.lineTo(-6,6);g.fill();
-  g.restore();
+  const w=cv.clientWidth,h=cv.clientHeight,sc=8,cx=w/2,cy=h/2,T=performance.now()/1000;
+  if(real){g.fillStyle='#0b1620';g.fillRect(0,0,w,h);return}
+  const X=a=>cx+(a-D.x)*sc,Y=b=>cy+(D.y-b)*sc;
+  const i0=Math.floor((D.x-w/2/sc)/20),i1=Math.ceil((D.x+w/2/sc)/20),j0=Math.floor((D.y-h/2/sc)/20),j1=Math.ceil((D.y+h/2/sc)/20);
+  for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){g.fillStyle=(i+j)&1?'#2f6b3f':'#2a6038';g.fillRect(X(i*20),Y((j+1)*20),20*sc+1,20*sc+1)}
+  g.strokeStyle='#ff4d4d';g.lineWidth=3;g.setLineDash([10,8]);g.strokeRect(X(-160),Y(160),320*sc,320*sc);g.setLineDash([]);
+  g.textAlign='center';
+  g.fillStyle='#3b4250';g.beginPath();g.arc(X(0),Y(0),5*sc,0,7);g.fill();g.fillStyle='#fff';g.font='700 22px Sora,sans-serif';g.fillText('H',X(0),Y(0)+8);
+  G.obs.forEach(o=>{g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.arc(X(o.x)+o.h*.6,Y(o.y)+o.h*.6,o.r*sc,0,7);g.fill();g.fillStyle='#b8453d';g.beginPath();g.arc(X(o.x),Y(o.y),o.r*sc,0,7);g.fill();g.fillStyle='#fff';g.font='700 11px Sora,sans-serif';g.fillText(o.h+'m',X(o.x),Y(o.y)+4)});
+  G.pick.forEach(p=>{g.fillStyle='#ffd23f';g.beginPath();g.arc(X(p.x),Y(p.y),10,0,7);g.fill();g.fillStyle='#222';g.font='700 14px Sora,sans-serif';g.fillText('+',X(p.x),Y(p.y)+5)});
+  G.rings.forEach((q,k)=>{if(k<G.idx)return;const c=k===G.idx;g.lineWidth=c?5:2;g.strokeStyle=c?`rgba(80,230,255,${.65+.35*Math.sin(T*6)})`:'rgba(255,255,255,.4)';g.beginPath();g.arc(X(q.x),Y(q.y),q.rad*sc,0,7);g.stroke();g.fillStyle='#fff';g.font='700 12px Sora,sans-serif';g.fillText((k+1)+' · '+q.alt+'m',X(q.x),Y(q.y)+4)});
+  const s0=1+D.alt*.02,fly=D.mode!=='DISARMED'&&D.mode!=='LANDED';
+  g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(cx+D.alt*.5,cy+D.alt*.5,16*s0,16*s0,0,0,7);g.fill();
+  g.save();g.translate(cx,cy);g.rotate(D.h*Math.PI/180);g.scale(s0,s0);
+  g.strokeStyle='#0d1a22';g.lineWidth=4;g.beginPath();g.moveTo(-14,-14);g.lineTo(14,14);g.moveTo(14,-14);g.lineTo(-14,14);g.stroke();
+  [[-14,-14,'#ff3b3b'],[14,-14,'#ff3b3b'],[-14,14,'#3b8bff'],[14,14,'#3b8bff']].forEach(p=>{
+    g.fillStyle='#e8f1f5';g.beginPath();g.arc(p[0],p[1],5,0,7);g.fill();
+    if(fly){g.fillStyle='rgba(255,255,255,.35)';g.beginPath();g.arc(p[0],p[1],11,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=2;const an=T*45+p[0];g.beginPath();g.moveTo(p[0]+Math.cos(an)*11,p[1]+Math.sin(an)*11);g.lineTo(p[0]-Math.cos(an)*11,p[1]-Math.sin(an)*11);g.stroke()}
+    else{g.fillStyle=p[2];g.beginPath();g.arc(p[0],p[1],2.5,0,7);g.fill()}});
+  g.fillStyle='#1f5fff';g.beginPath();g.moveTo(0,-12);g.lineTo(7,7);g.lineTo(-7,7);g.fill();g.restore();
+  if(G.flash>0){g.fillStyle=`rgba(255,0,0,${G.flash*.6})`;g.fillRect(0,0,w,h)}
+  const r=G.rings[G.idx],play=G.state==='play';
+  if(play&&r){const an=Math.atan2(r.x-D.x,r.y-D.y),dd=Math.hypot(r.x-D.x,r.y-D.y);
+    g.save();g.translate(cx+Math.sin(an)*56,cy-Math.cos(an)*56);g.rotate(an);g.fillStyle='#50e6ff';g.beginPath();g.moveTo(0,-9);g.lineTo(7,7);g.lineTo(-7,7);g.fill();g.restore();
+    g.fillStyle='#fff';g.font='700 11px Sora,sans-serif';g.fillText(Math.round(dd)+'m',cx+Math.sin(an)*78,cy-Math.cos(an)*78+4)}
+  const pill=(t,x,y,al)=>{g.font='700 13px Sora,sans-serif';const tw=g.measureText(t).width+14,px=al==='r'?x-tw:x;g.fillStyle='rgba(0,0,0,.5)';g.fillRect(px,y,tw,22);g.fillStyle='#fff';g.textAlign='left';g.fillText(t,px+7,y+16)};
+  const hp=Math.max(0,G.lives);
+  pill('★ '+G.score,8,38);pill('Ring (রিং) '+Math.min(G.idx,G.rings.length)+'/'+G.rings.length,8,64);pill('♥'.repeat(hp)+'♡'.repeat(3-hp),8,90);
+  pill('⏱ '+Math.floor(G.t)+'s',w-8,38,'r');pill('Battery (ব্যাটারি) '+Math.round(D.bat)+'%',w-8,64,'r');
+  const bx=12,by=124,bh=h-146,mxA=20;
+  g.fillStyle='rgba(0,0,0,.5)';g.fillRect(bx,by,14,bh);
+  if(play&&r){g.fillStyle='rgba(120,255,140,.6)';g.fillRect(bx-3,by+bh-bh*Math.min(1,(r.alt+3)/mxA),20,bh*6/mxA)}
+  g.fillStyle='#50e6ff';const fh=bh*Math.min(1,D.alt/mxA);g.fillRect(bx,by+bh-fh,14,fh);
+  g.fillStyle='#fff';g.font='700 11px Sora,sans-serif';g.textAlign='left';g.fillText(D.alt.toFixed(0)+'m',bx+18,by+bh-fh+4);
+  const m0=w-50,m1=h-50,mr=40,ms=.25;g.fillStyle='rgba(0,0,0,.5)';g.beginPath();g.arc(m0,m1,mr,0,7);g.fill();
+  const dot=(x,y,c,rd)=>{const px=(x-D.x)*ms,py=(D.y-y)*ms;if(Math.hypot(px,py)<mr-2){g.fillStyle=c;g.beginPath();g.arc(m0+px,m1+py,rd,0,7);g.fill()}};
+  G.obs.forEach(o=>dot(o.x,o.y,'#ff6b5e',2));G.pick.forEach(p=>dot(p.x,p.y,'#ffd23f',2));
+  G.rings.forEach((q,k)=>{if(k>=G.idx)dot(q.x,q.y,k===G.idx?'#50e6ff':'#ffffff88',3)});dot(0,0,'#fff',3);
+  g.fillStyle='#1f5fff';g.beginPath();g.arc(m0,m1,3,0,7);g.fill();
+  g.textAlign='center';
+  if(G.mt>0){g.font='700 15px Sora,sans-serif';const tw=g.measureText(G.msg).width+24;g.fillStyle='rgba(0,0,0,.6)';g.fillRect(cx-tw/2,h-64,tw,30);g.fillStyle='#fff';g.fillText(G.msg,cx,h-44)}
+  if(G.state!=='play'){
+    g.fillStyle='rgba(8,16,24,.76)';g.fillRect(cx-160,cy-84,320,158);g.fillStyle='#fff';
+    const L1=G.state==='win'?'Mission complete (মিশন কমপ্লিট) সফল!':G.state==='lose'?'Mission failed (মিশন ফেইলড) ব্যর্থ':'Mission (মিশন) '+G.level;
+    g.font='700 17px Sora,sans-serif';g.fillText(L1,cx,cy-52);g.font='13px Sora,sans-serif';
+    const ls=G.state==='idle'?['Takeoff (টেকঅফ) ওঠা chapo','Sob ring (রিং) diye uro,','tarpor Home (হোম) pad-e land koro']:[(G.why||'')+'  ★ '+G.score,'Best (বেস্ট) সেরা: '+G.best,'Takeoff chape abar khelo'];
+    ls.forEach((t,i)=>g.fillText(t,cx,cy-24+i*22));g.fillText('Level (লেভেল): '+G.level,cx,cy+56)}
+  g.textAlign='left';
 }
-
 function hud(){
   $('alt').textContent=D.alt.toFixed(1)+' m';
   $('spd').textContent=D.spd.toFixed(1)+' m/s';
@@ -198,10 +237,87 @@ function hud(){
   $('hd').textContent=Math.round(Math.hypot(D.x,D.y))+' m';
 }
 
+const H=location.hostname||'192.168.4.1';
+$('wsurl').value='ws://'+H+':8765';$('vidurl').value='/video';
+let real=false,ws=null,lastSend=0;
+const K={},cl=v=>Math.max(-1,Math.min(1,v));
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;K[e.key.toLowerCase()]=1;if(e.key.startsWith('Arrow')||e.key===' ')e.preventDefault()});
+addEventListener('keyup',e=>{K[e.key.toLowerCase()]=0});
+function inp(){
+  let t=L.y,y=L.x,p=R.y,r=R.x;
+  t+=(K.w?1:0)-(K.s?1:0);y+=(K.d?1:0)-(K.a?1:0);p+=(K.arrowup?1:0)-(K.arrowdown?1:0);r+=(K.arrowright?1:0)-(K.arrowleft?1:0);
+  const g=(navigator.getGamepads?navigator.getGamepads():[])[0];
+  if(g){const d=v=>Math.abs(v)>.12?v:0;y+=d(g.axes[0]);t-=d(g.axes[1]);r+=d(g.axes[2]);p-=d(g.axes[3])}
+  return{thr:cl(t),yaw:cl(y),pit:cl(p),rol:cl(r)};
+}
+function send(o){if(ws&&ws.readyState===1)ws.send(JSON.stringify(o))}
+function st(t,ok){$('cstat').textContent=t;$('cstat').style.color=ok?'var(--accent)':'var(--bad)'}
+function connect(){
+  if(!$('safe').checked){st('Safety (সেফটি) box-e tick din (দিন).',0);return}
+  if(location.protocol==='https:'&&$('wsurl').value.trim().startsWith('ws://')&&!/localhost|127\.0\.0\.1/.test($('wsurl').value)){st('https link theke connect hoy na. Computer-e bridge.py chalie phone-e http://IP:8080 link-e app khulo.',0);return}
+  try{ws=new WebSocket($('wsurl').value.trim())}catch(e){st('URL (ইউআরএল) bhul (ভুল).',0);return}
+  ws.onopen=()=>{real=true;st('Connected (কানেক্টেড) যুক্ত',1);const u=$('vidurl').value.trim();if(u){$('vid').src=u;$('vid').hidden=false}};
+  ws.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.t==='tele')tele(m)}catch(_){}};
+  ws.onclose=()=>{real=false;st('Disconnected (ডিসকানেক্টেড) বিচ্ছিন্ন',0);$('vid').hidden=true;$('vid').removeAttribute('src')};
+  ws.onerror=()=>st('Error (এরর) bhul (ভুল): bridge chalu ache kina dekho.',0);
+}
+$('vid').onerror=()=>st('Video (ভিডিও) URL-e video pawa jay ni.',0);
+function tele(m){
+  D.alt=m.alt??D.alt;D.spd=m.spd??D.spd;D.bat=m.bat??D.bat;D.x=m.dist??0;D.y=0;
+  if(m.mode){D.mode=m.mode;$('mode').textContent=MBN[m.mode]?m.mode+' ('+MBN[m.mode]+') '+MMN[m.mode]:m.mode}
+  if(m.sat!=null)$('gps').textContent='GPS (জিপিএস) অবস্থান: '+m.sat;
+}
+function realTick(){const n=performance.now();if(n-lastSend>50){lastSend=n;send(Object.assign({t:'rc'},inp()))}}
+$('bConn').onclick=connect;$('bDisc').onclick=()=>{if(ws)ws.close()};
+$('bMan').onclick=()=>{if(real)return send({t:'cmd',c:'manual'});if(D.alt>0&&D.mode!=='LANDING')setMode('MANUAL')};
+$('bDis').onclick=()=>{if(real)return send({t:'cmd',c:'disarm'});if(D.alt<=0)setMode('DISARMED')};
+if(location.protocol==='https:')st('HTTPS (এইচটিটিপিএস) page-e ws:// cholbe na. bridge.py chalie phone-e http://PI-IP:8080 khulo.',0);
+let G={state:'idle',level:1,score:0,lives:3,t:0,idx:0,rings:[],obs:[],pick:[],msg:'',mt:0,flash:0,best:0,why:''};
+try{G.best=+localStorage.getItem('uavBest')||0}catch(e){}
+const rnd=(a,b)=>a+Math.random()*(b-a);
+let AC;function beep(f,d=.12){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),v=AC.createGain();o.frequency.value=f;v.gain.value=.07;o.connect(v);v.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function say(t){G.msg=t;G.mt=2.4}
+function newLevel(){
+  G.rings=[];G.obs=[];G.pick=[];G.idx=0;G.t=0;G.lives=3;G.score=0;
+  const n=4+G.level;let a=Math.random()*6.28;
+  for(let i=0;i<n;i++){a+=rnd(.7,1.3);const r=rnd(35,40+G.level*14);G.rings.push({x:Math.sin(a)*r,y:Math.cos(a)*r,alt:Math.round(rnd(4,14)),rad:4.5})}
+  for(let i=0;i<4+G.level*2;i++){const x=rnd(-110,110),y=rnd(-110,110);if(Math.hypot(x,y)>14&&G.rings.every(q=>Math.hypot(q.x-x,q.y-y)>10))G.obs.push({x,y,r:3,h:Math.round(rnd(8,18))})}
+  for(let i=0;i<3;i++)G.pick.push({x:rnd(-90,90),y:rnd(-90,90)});
+}
+newLevel();
+function gameEnd(win,why){
+  if(win){G.score+=500+Math.max(0,300-Math.round(G.t*2))+Math.round(D.bat)*2;G.level++;beep(1040,.4)}
+  if(G.score>G.best){G.best=G.score;try{localStorage.setItem('uavBest',G.best)}catch(e){}}
+  G.state=win?'win':'lose';G.why=why||'';D.alt=0;D.spd=0;setMode('LANDED');
+}
+function game(dt){
+  if(G.state!=='play'){
+    if(D.mode==='TAKEOFF'){if(G.state!=='idle')newLevel();G.t=0;G.lives=3;G.score=0;G.idx=0;D.x=D.y=0;D.h=0;D.bat=100;G.state='play';say('Mission (মিশন) '+G.level+' shuru!')}
+    return;
+  }
+  G.t+=dt;G.mt=Math.max(0,G.mt-dt);G.flash=Math.max(0,G.flash-dt);
+  D.x=Math.max(-160,Math.min(160,D.x));D.y=Math.max(-160,Math.min(160,D.y));
+  const r=G.rings[G.idx];
+  if(r&&Math.hypot(D.x-r.x,D.y-r.y)<r.rad&&Math.abs(D.alt-r.alt)<3){G.idx++;G.score+=100;beep(880);say(G.idx>=G.rings.length?'Sob ring shesh! Home (হোম) pad-e land koro':'Ring (রিং) +100')}
+  G.pick=G.pick.filter(p=>{if(Math.hypot(D.x-p.x,D.y-p.y)<4){D.bat=Math.min(100,D.bat+20);G.score+=25;beep(660);say('Battery (ব্যাটারি) +20%');return false}return true});
+  for(const o of G.obs){
+    if(D.alt<o.h&&Math.hypot(D.x-o.x,D.y-o.y)<o.r+1.5){
+      const dx=D.x-o.x,dy=D.y-o.y,d=Math.hypot(dx,dy)||1;D.x=o.x+dx/d*(o.r+3);D.y=o.y+dy/d*(o.r+3);
+      G.lives--;G.flash=.5;beep(120,.3);try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}
+      say('Crash (ক্র্যাশ)! Life (লাইফ) kome gelo');
+      if(G.lives<=0)return gameEnd(false,'Crashed (ক্র্যাশড) ভেঙে গেছে');
+    }
+  }
+  if(D.alt<=.05&&D.mode==='MANUAL'&&G.t>3)setMode('LANDED');
+  if(D.mode==='LANDED'){
+    if(G.idx>=G.rings.length&&Math.hypot(D.x,D.y)<5)gameEnd(true);
+    else gameEnd(false,G.idx>=G.rings.length?'Home (হোম) pad-e land hoyni':'Mission (মিশন) adhura');
+  }
+}
 let last=performance.now();
 function loop(t){
   const dt=Math.min(.05,(t-last)/1000);last=t;
-  step(dt);draw();hud();requestAnimationFrame(loop);
+  if(real)realTick();else{step(dt);game(dt)}draw();hud();requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
