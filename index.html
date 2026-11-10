@@ -58,6 +58,20 @@ canvas{display:block;width:100%;height:380px;touch-action:none}
 .conn summary{font-weight:600;cursor:pointer}.conn label{display:block;margin:10px 0;font-size:13px;color:var(--muted)}
 .conn input:not([type=checkbox]){width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:14px Sora,system-ui,sans-serif;margin-top:4px}
 .conn .chk{display:flex;gap:8px;align-items:flex-start;color:var(--ink)}
+#gm{position:fixed;inset:0;background:#000;z-index:40;touch-action:none}
+#gc{width:100%;height:100%;display:block}
+.gtop{position:absolute;top:calc(8px + env(safe-area-inset-top,0px));right:10px;display:flex;gap:6px}
+.gtop button,.gbtn button{border:0;border-radius:10px;padding:8px 10px;background:rgba(0,0,0,.55);color:#fff;font:600 12px Sora,system-ui,sans-serif}
+.gbtn{position:absolute;bottom:calc(10px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;gap:6px}
+.gs{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom,0px));opacity:.65}
+#gsL{left:18px}#gsR{right:18px}
+#grot{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85);color:#fff;font:600 18px Sora,system-ui,sans-serif;text-align:center;padding:20px;z-index:3}
+.launch{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.launch h2{font-size:15px;margin:0 0 8px}
+.lrow{display:flex;gap:10px;align-items:flex-start}
+#mapc{width:50%;max-width:230px;border-radius:10px;background:var(--bg)}
+#linfo{flex:1;font-size:13px;line-height:1.5}
+.btns .big,button.big{width:100%;margin-top:10px;padding:14px;font-size:16px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;font-family:Sora,system-ui,sans-serif}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -70,6 +84,10 @@ canvas{display:block;width:100%;height:380px;touch-action:none}
 </div>
 
 <section id="fly">
+<div class="launch"><h2>Game (গেম) খেলা · Bangladesh (বাংলাদেশ) map (ম্যাপ) মানচিত্র</h2>
+<div class="lrow"><canvas id="mapc" aria-label="Bangladesh map"></canvas><div id="linfo"></div></div>
+<button class="big" id="gStart">Start game (স্টার্ট গেম) খেলা শুরু</button>
+<p class="note">Map-e jaygay tap kore choose (চুজ) বাছাই koro. Game full screen (ফুল স্ক্রিন) ar landscape (ল্যান্ডস্কেপ) হবে.</p></div>
 <div class="feed"><canvas id="cv"></canvas><img id="vid" alt="Live video" hidden>
 <div class="hud"><span id="mode">DISARMED (ডিসআর্মড) নিষ্ক্রিয়</span><span id="gps">GPS (জিপিএস) অবস্থান: 12</span></div></div>
 <div class="tele">
@@ -105,6 +123,11 @@ canvas{display:block;width:100%;height:380px;touch-action:none}
 <div id="list"></div>
 </section>
 </main>
+<div id="gm" hidden><canvas id="gc"></canvas>
+<div class="gtop"><button id="gRem">Remote (রিমোট) ON</button><button id="gSen">Sensor (সেন্সর) ON</button><button id="gx">✕ Exit (এক্সিট)</button></div>
+<div class="gbtn"><button id="gTake">Takeoff (টেকঅফ)</button><button id="gMan">Manual (ম্যানুয়াল)</button><button id="gLand">Land (ল্যান্ড)</button><button id="gRth">Home (হোম)</button></div>
+<div class="stick gs" id="gsL"><i></i></div><div class="stick gs" id="gsR"><i></i></div>
+<div id="grot" hidden>Phone (ফোন) ghurao (ঘুরান) — landscape (ল্যান্ডস্কেপ) আড়াআড়ি</div></div>
 <div id="zoom" hidden><button id="zx">Close (ক্লোজ) বন্ধ</button><img alt="Poster zoom"></div>
 
 <script>
@@ -188,7 +211,7 @@ function draw(){
   g.strokeStyle='#ff4d4d';g.lineWidth=3;g.setLineDash([10,8]);g.strokeRect(X(-160),Y(160),320*sc,320*sc);g.setLineDash([]);
   g.textAlign='center';
   g.fillStyle='#3b4250';g.beginPath();g.arc(X(0),Y(0),5*sc,0,7);g.fill();g.fillStyle='#fff';g.font='700 22px Sora,sans-serif';g.fillText('H',X(0),Y(0)+8);
-  G.obs.forEach(o=>{g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.arc(X(o.x)+o.h*.6,Y(o.y)+o.h*.6,o.r*sc,0,7);g.fill();g.fillStyle='#b8453d';g.beginPath();g.arc(X(o.x),Y(o.y),o.r*sc,0,7);g.fill();g.fillStyle='#fff';g.font='700 11px Sora,sans-serif';g.fillText(o.h+'m',X(o.x),Y(o.y)+4)});
+  G.obs.forEach(o=>{if(o.k==='tree'){g.fillStyle='#1d5a2a';g.beginPath();g.arc(X(o.x),Y(o.y),o.r*sc,0,7);g.fill();return}g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.arc(X(o.x)+o.h*.6,Y(o.y)+o.h*.6,o.r*sc,0,7);g.fill();g.fillStyle='#b8453d';g.beginPath();g.arc(X(o.x),Y(o.y),o.r*sc,0,7);g.fill();g.fillStyle='#fff';g.font='700 11px Sora,sans-serif';g.fillText(o.h+'m',X(o.x),Y(o.y)+4)});
   G.pick.forEach(p=>{g.fillStyle='#ffd23f';g.beginPath();g.arc(X(p.x),Y(p.y),10,0,7);g.fill();g.fillStyle='#222';g.font='700 14px Sora,sans-serif';g.fillText('+',X(p.x),Y(p.y)+5)});
   G.rings.forEach((q,k)=>{if(k<G.idx)return;const c=k===G.idx;g.lineWidth=c?5:2;g.strokeStyle=c?`rgba(80,230,255,${.65+.35*Math.sin(T*6)})`:'rgba(255,255,255,.4)';g.beginPath();g.arc(X(q.x),Y(q.y),q.rad*sc,0,7);g.stroke();g.fillStyle='#fff';g.font='700 12px Sora,sans-serif';g.fillText((k+1)+' · '+q.alt+'m',X(q.x),Y(q.y)+4)});
   const s0=1+D.alt*.02,fly=D.mode!=='DISARMED'&&D.mode!=='LANDED';
@@ -244,7 +267,8 @@ const K={},cl=v=>Math.max(-1,Math.min(1,v));
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;K[e.key.toLowerCase()]=1;if(e.key.startsWith('Arrow')||e.key===' ')e.preventDefault()});
 addEventListener('keyup',e=>{K[e.key.toLowerCase()]=0});
 function inp(){
-  let t=L.y,y=L.x,p=R.y,r=R.x;
+  if(!remoteOn)return{thr:0,yaw:0,pit:0,rol:0};
+  let t=L.y+L2.y,y=L.x+L2.x,p=R.y+R2.y,r=R.x+R2.x;
   t+=(K.w?1:0)-(K.s?1:0);y+=(K.d?1:0)-(K.a?1:0);p+=(K.arrowup?1:0)-(K.arrowdown?1:0);r+=(K.arrowright?1:0)-(K.arrowleft?1:0);
   const g=(navigator.getGamepads?navigator.getGamepads():[])[0];
   if(g){const d=v=>Math.abs(v)>.12?v:0;y+=d(g.axes[0]);t-=d(g.axes[1]);r+=d(g.axes[2]);p-=d(g.axes[3])}
@@ -272,17 +296,31 @@ $('bConn').onclick=connect;$('bDisc').onclick=()=>{if(ws)ws.close()};
 $('bMan').onclick=()=>{if(real)return send({t:'cmd',c:'manual'});if(D.alt>0&&D.mode!=='LANDING')setMode('MANUAL')};
 $('bDis').onclick=()=>{if(real)return send({t:'cmd',c:'disarm'});if(D.alt<=0)setMode('DISARMED')};
 if(location.protocol==='https:')st('HTTPS (এইচটিটিপিএস) page-e ws:// cholbe na. bridge.py chalie phone-e http://PI-IP:8080 khulo.',0);
-let G={state:'idle',level:1,score:0,lives:3,t:0,idx:0,rings:[],obs:[],pick:[],msg:'',mt:0,flash:0,best:0,why:''};
+const BD=[[88.55,26.62],[88.3,26.5],[88.1,26.0],[88.2,25.3],[88.0,24.65],[88.35,24.45],[88.6,23.95],[88.7,23.55],[88.85,23.1],[88.9,22.5],[89.05,22.1],[89.0,21.7],[89.5,21.75],[89.95,21.8],[90.4,21.85],[90.9,22.3],[91.4,22.75],[91.8,22.3],[91.95,21.45],[92.2,20.9],[92.33,20.6],[92.42,21.1],[92.6,21.7],[92.55,22.2],[92.3,22.9],[92.0,23.5],[91.8,23.9],[91.7,24.2],[92.15,24.35],[92.25,24.9],[91.9,25.15],[91.3,25.2],[90.8,25.15],[90.2,25.2],[89.85,25.5],[89.85,26.25],[89.2,26.2],[88.9,26.45]];
+const mp=(lo,la,w,h)=>[(lo-87.9)/5*w,(26.8-la)/6.4*h];
+const LOC=[
+{n:'Dhaka',bn:'ঢাকা',lat:23.81,lon:90.41,sky:['#5f9bd6','#cfe3f5'],g:['#5f6b52','#566149'],leaf:'#2f7a3a',trees:30,bld:18,birds:8,lv:'Medium (মিডিয়াম) মাঝারি',d:'শহর: অনেক বিল্ডিং, রাস্তা আর কাক।',feat:(x,y)=>{const a=((x%80)+80)%80,b=((y%80)+80)%80;return(a<5||b<5)?'#3a3d42':0}},
+{n:"Cox's Bazar",bn:'কক্সবাজার',lat:21.43,lon:91.98,sky:['#4fa3e0','#d8ecf8'],g:['#d8c590','#cdb97f'],leaf:'#2f8a3a',palm:1,trees:45,bld:3,birds:10,lv:'Easy (ইজি) সহজ',d:'সমুদ্র সৈকত: নারকেল গাছ আর গাংচিল।',nt:(x,y)=>x<-45,feat:(x,y)=>x<-45?(((Math.floor(y/6)+Math.floor(x/6))&1)?'#2f7fb5':'#2a74a8'):0},
+{n:'Sylhet',bn:'সিলেট',lat:24.9,lon:91.87,sky:['#6fb0e6','#dcefd8'],g:['#4f9a3a','#478f34'],leaf:'#2d7d32',trees:80,bld:2,birds:7,lv:'Easy (ইজি) সহজ',d:'চা-বাগান আর সবুজ টিলা।',feat:(x,y)=>0},
+{n:'Sundarbans',bn:'সুন্দরবন',lat:22.1,lon:89.5,sky:['#7fb2c8','#d3e6e0'],g:['#2f6b3f','#2a6038'],leaf:'#1f5a2c',trees:110,bld:0,birds:12,lv:'Hard (হার্ড) কঠিন',d:'ম্যানগ্রোভ বন, নদী আর অনেক পাখি।',nt:(x,y)=>Math.sin(x*.045)+Math.cos(y*.05+x*.02)>1.35,feat:(x,y)=>Math.sin(x*.045)+Math.cos(y*.05+x*.02)>1.35?'#3b6f8a':0},
+{n:'Rajshahi',bn:'রাজশাহী',lat:24.37,lon:88.6,sky:['#6aa6dc','#f0e6c8'],g:['#a7b84a','#9aac41'],leaf:'#3f8f2a',trees:50,bld:4,birds:8,lv:'Easy (ইজি) সহজ',d:'ফসলের মাঠ আর আমবাগান।',feat:(x,y)=>0},
+{n:'Bandarban',bn:'বান্দরবান',lat:22.19,lon:92.22,sky:['#5b97c9','#cfe0ea'],g:['#6b8e3a','#5f8133'],leaf:'#2a6b2a',trees:95,bld:0,birds:9,lv:'Hard (হার্ড) কঠিন',d:'পাহাড়ি বন, ঘন গাছ।',feat:(x,y)=>0}];
+let loc=0,gOpen=false,remoteOn=true,sensorOn=true;
+const Tilt={p:0,r:0};
+let G={state:'idle',level:1,score:0,lives:3,t:0,idx:0,rings:[],obs:[],pick:[],birds:[],near:null,bt:0,cool:0,msg:'',mt:0,flash:0,best:0,why:''};
 try{G.best=+localStorage.getItem('uavBest')||0}catch(e){}
 const rnd=(a,b)=>a+Math.random()*(b-a);
 let AC;function beep(f,d=.12){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),v=AC.createGain();o.frequency.value=f;v.gain.value=.07;o.connect(v);v.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
 function say(t){G.msg=t;G.mt=2.4}
 function newLevel(){
-  G.rings=[];G.obs=[];G.pick=[];G.idx=0;G.t=0;G.lives=3;G.score=0;
+  const th=LOC[loc];G.rings=[];G.obs=[];G.pick=[];G.birds=[];G.idx=0;G.t=0;G.lives=3;G.score=0;G.near=null;
   const n=4+G.level;let a=Math.random()*6.28;
-  for(let i=0;i<n;i++){a+=rnd(.7,1.3);const r=rnd(35,40+G.level*14);G.rings.push({x:Math.sin(a)*r,y:Math.cos(a)*r,alt:Math.round(rnd(4,14)),rad:4.5})}
-  for(let i=0;i<4+G.level*2;i++){const x=rnd(-110,110),y=rnd(-110,110);if(Math.hypot(x,y)>14&&G.rings.every(q=>Math.hypot(q.x-x,q.y-y)>10))G.obs.push({x,y,r:3,h:Math.round(rnd(8,18))})}
+  for(let i=0;i<n;i++){a+=rnd(.7,1.3);const r=rnd(35,40+G.level*14);G.rings.push({x:Math.sin(a)*r,y:Math.cos(a)*r,alt:Math.round(rnd(5,14)),rad:4.5})}
+  const far=(x,y,m)=>Math.hypot(x,y)>m&&G.rings.every(q=>Math.hypot(q.x-x,q.y-y)>q.rad+m*.4);
+  for(let i=0;i<th.trees+G.level*6;i++){const x=rnd(-150,150),y=rnd(-150,150);if(th.nt&&th.nt(x,y))continue;if(far(x,y,12))G.obs.push({k:'tree',x,y,r:2.5,h:Math.round(rnd(7,14))})}
+  for(let i=0;i<th.bld;i++){const x=rnd(-140,140),y=rnd(-140,140);if(far(x,y,18))G.obs.push({k:'bld',x,y,r:rnd(6,9),h:Math.round(rnd(16,38))})}
   for(let i=0;i<3;i++)G.pick.push({x:rnd(-90,90),y:rnd(-90,90)});
+  for(let i=0;i<th.birds+G.level;i++)G.birds.push({x:rnd(-150,150),y:rnd(-150,150),z:rnd(5,22),a:rnd(0,6.28),v:rnd(3,6),ph:rnd(0,6)});
 }
 newLevel();
 function gameEnd(win,why){
@@ -290,34 +328,175 @@ function gameEnd(win,why){
   if(G.score>G.best){G.best=G.score;try{localStorage.setItem('uavBest',G.best)}catch(e){}}
   G.state=win?'win':'lose';G.why=why||'';D.alt=0;D.spd=0;setMode('LANDED');
 }
+function hit(x,y,r,soft){
+  const dx=D.x-x,dy=D.y-y,d=Math.hypot(dx,dy)||1;D.x=x+dx/d*(r+3.4);D.y=y+dy/d*(r+3.4);
+  if(soft){say('Sensor (সেন্সর) brake (ব্রেক) – bachlo!');beep(500,.1);return false}
+  if(G.cool>0)return false;
+  G.cool=1;G.lives--;G.flash=.5;beep(120,.3);try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}
+  say('Crash (ক্র্যাশ)! Life (লাইফ) kome gelo');
+  if(G.lives<=0){gameEnd(false,'Crashed (ক্র্যাশড) ভেঙে গেছে');return true}
+  return false;
+}
 function game(dt){
+  G.birds.forEach(b=>{b.x+=Math.sin(b.a)*b.v*dt;b.y+=Math.cos(b.a)*b.v*dt;b.ph+=dt;if(Math.abs(b.x)>160||Math.abs(b.y)>160){b.a+=Math.PI;b.x=Math.max(-160,Math.min(160,b.x));b.y=Math.max(-160,Math.min(160,b.y))}});
   if(G.state!=='play'){
     if(D.mode==='TAKEOFF'){if(G.state!=='idle')newLevel();G.t=0;G.lives=3;G.score=0;G.idx=0;D.x=D.y=0;D.h=0;D.bat=100;G.state='play';say('Mission (মিশন) '+G.level+' shuru!')}
     return;
   }
-  G.t+=dt;G.mt=Math.max(0,G.mt-dt);G.flash=Math.max(0,G.flash-dt);
+  G.t+=dt;G.mt=Math.max(0,G.mt-dt);G.flash=Math.max(0,G.flash-dt);G.cool=Math.max(0,G.cool-dt);
   D.x=Math.max(-160,Math.min(160,D.x));D.y=Math.max(-160,Math.min(160,D.y));
   const r=G.rings[G.idx];
   if(r&&Math.hypot(D.x-r.x,D.y-r.y)<r.rad&&Math.abs(D.alt-r.alt)<3){G.idx++;G.score+=100;beep(880);say(G.idx>=G.rings.length?'Sob ring shesh! Home (হোম) pad-e land koro':'Ring (রিং) +100')}
   G.pick=G.pick.filter(p=>{if(Math.hypot(D.x-p.x,D.y-p.y)<4){D.bat=Math.min(100,D.bat+20);G.score+=25;beep(660);say('Battery (ব্যাটারি) +20%');return false}return true});
+  let dm=99,da=0;
   for(const o of G.obs){
-    if(D.alt<o.h&&Math.hypot(D.x-o.x,D.y-o.y)<o.r+1.5){
-      const dx=D.x-o.x,dy=D.y-o.y,d=Math.hypot(dx,dy)||1;D.x=o.x+dx/d*(o.r+3);D.y=o.y+dy/d*(o.r+3);
-      G.lives--;G.flash=.5;beep(120,.3);try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}
-      say('Crash (ক্র্যাশ)! Life (লাইফ) kome gelo');
-      if(G.lives<=0)return gameEnd(false,'Crashed (ক্র্যাশড) ভেঙে গেছে');
-    }
+    if(D.alt>=o.h+1)continue;
+    const dx=o.x-D.x,dy=o.y-D.y,dd=Math.hypot(dx,dy)-o.r;
+    if(dd<dm){dm=dd;da=Math.atan2(dx,dy)}
+    if(dd<(sensorOn?3:1.2)&&hit(o.x,o.y,o.r,sensorOn))return;
   }
+  for(const b of G.birds){
+    const dx=b.x-D.x,dy=b.y-D.y,dz=b.z-D.alt,dd=Math.hypot(dx,dy,dz)-1;
+    if(dd<dm){dm=dd;da=Math.atan2(dx,dy)}
+    if(dd<(sensorOn?3.5:1.2)&&hit(b.x,b.y,1,sensorOn))return;
+  }
+  G.near={d:dm,a:da};
+  if(sensorOn&&dm<15){G.bt-=dt;if(G.bt<=0){beep(1000,.05);G.bt=Math.max(.1,dm/15)}}
   if(D.alt<=.05&&D.mode==='MANUAL'&&G.t>3)setMode('LANDED');
   if(D.mode==='LANDED'){
     if(G.idx>=G.rings.length&&Math.hypot(D.x,D.y)<5)gameEnd(true);
     else gameEnd(false,G.idx>=G.rings.length?'Home (হোম) pad-e land hoyni':'Mission (মিশন) adhura');
   }
 }
+const gc=$('gc'),c2=gc.getContext('2d'),L2=stick($('gsL')),R2=stick($('gsR'));
+function resizeG(){gc.width=Math.round(innerWidth*.8);gc.height=Math.round(innerHeight*.8);$('grot').hidden=innerWidth>=innerHeight}
+addEventListener('resize',resizeG);addEventListener('orientationchange',resizeG);
+function openGame(){
+  if(real){st('Real drone (রিয়াল ড্রোন) connected — age Disconnect koro.',0);return}
+  gOpen=true;$('gm').hidden=false;
+  try{const el=$('gm'),p=(el.requestFullscreen||el.webkitRequestFullscreen).call(el);p&&p.catch&&p.catch(()=>{})}catch(e){}
+  try{screen.orientation.lock('landscape').catch(()=>{})}catch(e){}
+  newLevel();G.state='idle';D.x=D.y=0;D.alt=0;D.h=0;D.bat=100;D.mode='DISARMED';resizeG();
+}
+function closeGame(){
+  gOpen=false;$('gm').hidden=true;
+  try{if(document.fullscreenElement)document.exitFullscreen()}catch(e){}
+  try{screen.orientation.unlock()}catch(e){}
+}
+document.addEventListener('fullscreenchange',()=>{if(gOpen&&!document.fullscreenElement)closeGame()});
+$('gStart').onclick=openGame;$('gx').onclick=closeGame;
+$('gRem').onclick=()=>{remoteOn=!remoteOn;$('gRem').textContent='Remote (রিমোট) '+(remoteOn?'ON':'OFF');$('gsL').style.visibility=$('gsR').style.visibility=remoteOn?'visible':'hidden'};
+$('gSen').onclick=()=>{sensorOn=!sensorOn;$('gSen').textContent='Sensor (সেন্সর) '+(sensorOn?'ON':'OFF')};
+$('gTake').onclick=()=>$('bTake').onclick();$('gMan').onclick=()=>$('bMan').onclick();
+$('gLand').onclick=()=>$('bLand').onclick();$('gRth').onclick=()=>$('bRth').onclick();
+
+const mapCv=$('mapc'),mx2=mapCv.getContext('2d');mapCv.width=300;mapCv.height=419;
+function drawMap(){
+  const W=300,Hh=419;mx2.fillStyle=css('--bg');mx2.fillRect(0,0,W,Hh);
+  mx2.beginPath();BD.forEach((p,i)=>{const q=mp(p[0],p[1],W,Hh);i?mx2.lineTo(q[0],q[1]):mx2.moveTo(q[0],q[1])});mx2.closePath();
+  mx2.fillStyle='#3f8f55';mx2.fill();mx2.strokeStyle='#1f5a35';mx2.lineWidth=3;mx2.stroke();
+  LOC.forEach((l,i)=>{const q=mp(l.lon,l.lat,W,Hh),rt=q[0]>W*.6;mx2.fillStyle=i===loc?'#1f5fff':'#ffd23f';mx2.beginPath();mx2.arc(q[0],q[1],i===loc?10:7,0,7);mx2.fill();mx2.strokeStyle='#000';mx2.lineWidth=1.5;mx2.stroke();mx2.fillStyle=css('--ink');mx2.font='600 15px Sora,sans-serif';mx2.textAlign=rt?'right':'left';mx2.fillText(l.n,q[0]+(rt?-14:14),q[1]+5)});
+  const l=LOC[loc];$('linfo').innerHTML='<b>'+l.n+' ('+l.bn+')</b><br>'+l.d+'<br><br>Level (লেভেল): '+l.lv+'<br>Bird (বার্ড) পাখি: '+l.birds+'<br>Tree (ট্রি) গাছ: '+l.trees+(l.bld?'<br>Building (বিল্ডিং) বাড়ি: '+l.bld:'');
+}
+mapCv.addEventListener('pointerdown',e=>{const r=mapCv.getBoundingClientRect(),x=(e.clientX-r.left)*300/r.width,y=(e.clientY-r.top)*419/r.height;let b=0,bd=1e9;LOC.forEach((l,i)=>{const q=mp(l.lon,l.lat,300,419),d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;b=i}});loc=b;drawMap()});
+drawMap();
+
+function drawFPV(){
+  const W=gc.width,Hh=gc.height;if(!W)return;
+  const T=performance.now()/1000,th=LOC[loc],F=W*.9,rad=Math.PI/180;
+  const sh=Math.sin(D.h*rad),ch=Math.cos(D.h*rad),camH=D.alt+1.6,hor=Hh*.46-Tilt.p*Hh*.07;
+  c2.save();c2.translate(W/2,Hh/2);c2.rotate(Tilt.r*.1);c2.translate(-W/2,-Hh/2);
+  let gr=c2.createLinearGradient(0,hor-Hh*.6,0,hor);gr.addColorStop(0,th.sky[0]);gr.addColorStop(1,th.sky[1]);
+  c2.fillStyle=gr;c2.fillRect(-W,-Hh,3*W,hor+Hh);
+  const ds=((60-D.h+540)%360)-180;
+  if(Math.abs(ds)<70){const sx=W/2+Math.tan(ds*rad)*F,sy=hor-Hh*.3;gr=c2.createRadialGradient(sx,sy,0,sx,sy,60);gr.addColorStop(0,'#fff8d0');gr.addColorStop(.25,'#ffe9a0');gr.addColorStop(1,'rgba(255,230,150,0)');c2.fillStyle=gr;c2.fillRect(sx-70,sy-70,140,140)}
+  c2.fillStyle=th.g[0];c2.fillRect(-W,hor,3*W,Hh+W);
+  for(let y=Math.ceil(hor)+3;y<Hh+70;y+=5){
+    const f=camH*F/(y-hor);if(f>420)continue;
+    for(let x=-W*.2;x<W*1.2;x+=10){
+      const r=(x-W/2)*f/F,wx=D.x+f*sh+r*ch,wy=D.y+f*ch-r*sh;
+      c2.fillStyle=th.feat(wx,wy)||(((Math.floor(wx/12)+Math.floor(wy/12))&1)?th.g[0]:th.g[1]);
+      c2.fillRect(x,y,10,5);
+    }
+  }
+  gr=c2.createLinearGradient(0,hor,0,hor+Hh*.22);gr.addColorStop(0,th.sky[1]);gr.addColorStop(1,th.sky[1]+'00');c2.fillStyle=gr;c2.fillRect(-W,hor,3*W,Hh*.22);
+  const proj=(wx,wy,wz)=>{const dx=wx-D.x,dy=wy-D.y,f=dx*sh+dy*ch;if(f<1.5)return null;const r=dx*ch-dy*sh,s=F/f,x=W/2+r*s;if(Math.abs(x-W/2)>W*.9)return null;return{f,x,y:hor+(camH-wz)*s,s}};
+  const items=[];
+  const hp=proj(0,0,0);
+  if(hp){const rx=5*hp.s,ry=Math.max(2,rx*camH/hp.f);c2.fillStyle='#3b4250';c2.beginPath();c2.ellipse(hp.x,hp.y,rx,ry,0,0,7);c2.fill();c2.strokeStyle='#fff';c2.lineWidth=2;c2.stroke();c2.fillStyle='#fff';c2.font='700 '+Math.max(8,ry*1.6)+'px Sora,sans-serif';c2.textAlign='center';c2.fillText('H',hp.x,hp.y+ry*.5)}
+  G.obs.forEach(o=>{const p=proj(o.x,o.y,0);if(p&&p.f<320)items.push([p.f,()=>{
+    const s=p.s;c2.globalAlpha=Math.max(0,Math.min(1,(320-p.f)/120));
+    if(o.k==='tree'){
+      const top=p.y-o.h*s,tw=Math.max(1,.7*s);
+      c2.fillStyle='#5a3d22';c2.fillRect(p.x-tw/2,top+o.h*s*.35,tw,o.h*s*.65);
+      if(th.palm){c2.strokeStyle='#2f8a3a';c2.lineWidth=Math.max(1,.5*s);for(let k=0;k<7;k++){const a=k/7*6.28;c2.beginPath();c2.moveTo(p.x,top+o.h*s*.35);c2.quadraticCurveTo(p.x+Math.cos(a)*o.h*s*.25,top-s*1.5,p.x+Math.cos(a)*o.h*s*.45,top+o.h*s*.35+Math.sin(a)*s*2);c2.stroke()}}
+      else{const R=o.h*.38*s;c2.fillStyle=th.leaf;c2.beginPath();c2.ellipse(p.x,top+R*.6,R,R*.8,0,0,7);c2.fill();c2.fillStyle='rgba(255,255,255,.12)';c2.beginPath();c2.ellipse(p.x-R*.3,top+R*.4,R*.5,R*.4,0,0,7);c2.fill()}
+    }else{
+      const w=o.r*2*s,hh=o.h*s;c2.fillStyle='#8791a1';c2.fillRect(p.x-w/2,p.y-hh,w,hh);c2.fillStyle='rgba(0,0,0,.22)';c2.fillRect(p.x+w/6,p.y-hh,w/3,hh);
+      c2.fillStyle='rgba(255,236,150,.55)';for(let zz=3;zz<o.h-1;zz+=4)for(let k=-2;k<=1;k++)c2.fillRect(p.x+k*w/5-.6*s,p.y-zz*s,Math.max(1,1.2*s),Math.max(1,1.6*s));
+    }
+    c2.globalAlpha=1}])});
+  G.pick.forEach(q=>{const p=proj(q.x,q.y,2);if(p)items.push([p.f,()=>{c2.fillStyle='#ffd23f';c2.beginPath();c2.arc(p.x,p.y,Math.max(3,1.2*p.s),0,7);c2.fill();c2.fillStyle='#222';c2.font='700 '+Math.max(8,1.6*p.s)+'px Sora,sans-serif';c2.textAlign='center';c2.fillText('+',p.x,p.y+Math.max(3,.6*p.s))}])});
+  G.birds.forEach(b=>{const p=proj(b.x,b.z>0?b.y:b.y,b.z);if(p&&p.f<200)items.push([p.f,()=>{
+    const w=1.3*p.s,fl=Math.sin(T*11+b.ph)*.8*p.s;c2.strokeStyle='#14181f';c2.lineWidth=Math.max(1.5,.35*p.s);c2.lineCap='round';
+    c2.beginPath();c2.moveTo(p.x-w,p.y-fl);c2.quadraticCurveTo(p.x-w*.4,p.y-fl*.2,p.x,p.y);c2.quadraticCurveTo(p.x+w*.4,p.y-fl*.2,p.x+w,p.y-fl);c2.stroke()}])});
+  G.rings.forEach((q,k)=>{if(k<G.idx)return;const p=proj(q.x,q.y,q.alt);if(!p)return;items.push([p.f,()=>{
+    const R=q.rad*p.s,cur=k===G.idx;c2.lineWidth=Math.max(2,R*.12);c2.strokeStyle=cur?`rgba(80,230,255,${.7+.3*Math.sin(T*6)})`:'rgba(255,255,255,.5)';
+    c2.beginPath();c2.arc(p.x,p.y,R,0,7);c2.stroke();
+    if(cur){c2.fillStyle='rgba(80,230,255,.12)';c2.fill();c2.fillStyle='#fff';c2.font='700 12px Sora,sans-serif';c2.textAlign='center';c2.fillText(Math.round(p.f)+'m · '+q.alt+'m up',p.x,p.y-R-6)}}])});
+  items.sort((a,b)=>b[0]-a[0]).forEach(i=>i[1]());
+  c2.restore();
+  gr=c2.createRadialGradient(W/2,Hh/2,Hh*.35,W/2,Hh/2,Hh*.95);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.45)');c2.fillStyle=gr;c2.fillRect(0,0,W,Hh);
+  if(G.flash>0){c2.fillStyle=`rgba(255,0,0,${G.flash*.6})`;c2.fillRect(0,0,W,Hh)}
+  c2.strokeStyle='rgba(255,255,255,.75)';c2.lineWidth=1.5;c2.beginPath();
+  c2.moveTo(W/2-12,Hh/2);c2.lineTo(W/2-4,Hh/2);c2.moveTo(W/2+4,Hh/2);c2.lineTo(W/2+12,Hh/2);c2.moveTo(W/2,Hh/2-12);c2.lineTo(W/2,Hh/2-4);c2.moveTo(W/2,Hh/2+4);c2.lineTo(W/2,Hh/2+12);c2.stroke();
+  const play=G.state==='play';
+  if(sensorOn&&play&&G.near&&G.near.d<15){
+    const inten=1-G.near.d/15,col=`rgba(255,40,40,${.15+.5*inten})`;let rel=G.near.a-D.h*rad;rel=Math.atan2(Math.sin(rel),Math.cos(rel));
+    const edge=(x0,y0,x1,y1,rx,ry,rw,rh)=>{const g3=c2.createLinearGradient(x0,y0,x1,y1);g3.addColorStop(0,col);g3.addColorStop(1,'rgba(255,40,40,0)');c2.fillStyle=g3;c2.fillRect(rx,ry,rw,rh)};
+    if(Math.abs(rel)<.7)edge(0,0,0,Hh*.25,0,0,W,Hh*.25);
+    else if(rel<0&&rel>-2.4)edge(0,0,W*.18,0,0,0,W*.18,Hh);
+    else if(rel>0&&rel<2.4)edge(W,0,W*.82,0,W*.82,0,W*.18,Hh);
+    else edge(0,Hh,0,Hh*.75,0,Hh*.75,W,Hh*.25);
+  }
+  c2.shadowColor='#000';c2.shadowBlur=4;
+  const tx=(t,x,y,al,sz,col)=>{c2.font='700 '+(sz||13)+'px Sora,sans-serif';c2.textAlign=al||'left';c2.fillStyle=col||'#fff';c2.fillText(t,x,y)};
+  const la=th.lat+D.y/111000,lo=th.lon+D.x/(111000*Math.cos(th.lat*rad));
+  tx((Math.floor(T*2)%2?'●':'○')+' REC · LIVE (লাইভ)',10,22,'left',13,'#ff5a5a');
+  tx(new Date().toLocaleTimeString(),10,40,'left',11);
+  tx('📍 '+th.n+' ('+th.bn+')',10,58,'left',12);
+  tx(la.toFixed(4)+'°N '+lo.toFixed(4)+'°E',10,74,'left',11);
+  tx('★ '+G.score+'   Ring (রিং) '+Math.min(G.idx,G.rings.length)+'/'+G.rings.length,10,96,'left',13);
+  const hp2=Math.max(0,G.lives);tx('♥'.repeat(hp2)+'♡'.repeat(3-hp2)+'  ⏱ '+Math.floor(G.t)+'s',10,114,'left',13);
+  tx('Alt (অল্ট) '+D.alt.toFixed(1)+' m',W-10,66,'right',13);tx('Speed (স্পিড) '+D.spd.toFixed(1)+' m/s',W-10,84,'right',12);
+  tx('Battery (ব্যাটারি) '+Math.round(D.bat)+'%',W-10,102,'right',12,D.bat<20?'#ff6b6b':'#fff');
+  tx('Sensor (সেন্সর) '+(sensorOn?(play&&G.near&&G.near.d<15?G.near.d.toFixed(1)+' m':'safe'):'OFF'),W-10,120,'right',12,sensorOn&&play&&G.near&&G.near.d<8?'#ff6b6b':'#fff');
+  for(let k=-6;k<=6;k++){const deg=(Math.round(D.h/15)*15+k*15+720)%360,x=W/2+(((deg-D.h+540)%360)-180)*(W/110);if(Math.abs(x-W/2)>W*.22)continue;
+    c2.strokeStyle='#fff';c2.lineWidth=1;c2.beginPath();c2.moveTo(x,12);c2.lineTo(x,deg%90===0?24:19);c2.stroke();
+    tx(deg===0?'N':deg===90?'E':deg===180?'S':deg===270?'W':String(deg),x,36,'center',10)}
+  tx('▼',W/2,10,'center',9);
+  const mw=56,mh=78,mx=W-mw-14,my=Hh*.36;
+  c2.shadowBlur=0;c2.fillStyle='rgba(0,0,0,.45)';c2.fillRect(mx-4,my-4,mw+8,mh+8);c2.fillStyle='#3f8f55';c2.beginPath();
+  BD.forEach((p,i)=>{const q=mp(p[0],p[1],mw,mh);i?c2.lineTo(mx+q[0],my+q[1]):c2.moveTo(mx+q[0],my+q[1])});c2.closePath();c2.fill();
+  const dq=mp(lo,la,mw,mh);c2.fillStyle='#ff3b3b';c2.beginPath();c2.arc(mx+dq[0],my+dq[1],3,0,7);c2.fill();
+  c2.shadowBlur=4;
+  const r0=G.rings[G.idx];
+  if(play&&r0){const dx=r0.x-D.x,dy=r0.y-D.y,f=dx*sh+dy*ch,rr=dx*ch-dy*sh,ang=Math.atan2(rr,f);
+    if(Math.abs(ang)>.75||f<1.5){const side=rr>=0?1:-1;tx(side>0?'▶':'◀',side>0?W-44:44,Hh/2,'center',26,'#50e6ff');tx(Math.round(Math.hypot(dx,dy))+'m',side>0?W-44:44,Hh/2+20,'center',11,'#50e6ff')}}
+  if(G.mt>0)tx(G.msg,W/2,Hh-62,'center',15);
+  if(G.state!=='play'){
+    c2.shadowBlur=0;c2.fillStyle='rgba(8,16,24,.78)';c2.fillRect(W/2-170,Hh/2-84,340,160);c2.shadowBlur=3;
+    const L1=G.state==='win'?'Mission complete (মিশন কমপ্লিট) সফল!':G.state==='lose'?'Mission failed (মিশন ফেইলড) ব্যর্থ':'Mission (মিশন) '+G.level+' · '+th.n;
+    tx(L1,W/2,Hh/2-50,'center',16);
+    const ls=G.state==='idle'?['Takeoff (টেকঅফ) ওঠা chapo','Sob ring (রিং) diye uro,','tarpor Home (হোম) pad-e land koro']:[(G.why||'')+'  ★ '+G.score,'Best (বেস্ট) সেরা: '+G.best,'Takeoff chape abar khelo'];
+    ls.forEach((t,i)=>tx(t,W/2,Hh/2-22+i*22,'center',13));tx('Level (লেভেল): '+G.level,W/2,Hh/2+58,'center',12);
+  }
+  c2.shadowBlur=0;
+}
 let last=performance.now();
 function loop(t){
   const dt=Math.min(.05,(t-last)/1000);last=t;
-  if(real)realTick();else{step(dt);game(dt)}draw();hud();requestAnimationFrame(loop);
+  if(real)realTick();else{step(dt);game(dt)}if(gOpen){const q=inp();Tilt.p+=(q.pit-Tilt.p)*.12;Tilt.r+=(q.rol-Tilt.r)*.12;drawFPV()}else draw();hud();requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
