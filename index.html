@@ -86,8 +86,8 @@ canvas{display:block;width:100%;height:380px;touch-action:none}
 <section id="fly">
 <div class="launch"><h2>Game (গেম) খেলা · Bangladesh (বাংলাদেশ) map (ম্যাপ) মানচিত্র</h2>
 <div class="lrow"><canvas id="mapc" aria-label="Bangladesh map"></canvas><div id="linfo"></div></div>
-<button class="big" id="gStart">Start game (স্টার্ট গেম) খেলা শুরু</button>
-<p class="note">Map-e jaygay tap kore choose (চুজ) বাছাই koro. Game full screen (ফুল স্ক্রিন) ar landscape (ল্যান্ডস্কেপ) হবে.</p></div>
+<button class="big" id="gStart">Start game (স্টার্ট গেম) খেলা শুরু · Satellite (স্যাটেলাইট) 3D</button>
+<p class="note">Map-e jaygay tap kore choose (চুজ) বাছাই koro. Game full screen (ফুল স্ক্রিন) ar landscape (ল্যান্ডস্কেপ) হবে. Asol satellite (স্যাটেলাইট) ছবির jonno internet (ইন্টারনেট) lagbe.</p></div>
 <div class="feed"><canvas id="cv"></canvas><img id="vid" alt="Live video" hidden>
 <div class="hud"><span id="mode">DISARMED (ডিসআর্মড) নিষ্ক্রিয়</span><span id="gps">GPS (জিপিএস) অবস্থান: 12</span></div></div>
 <div class="tele">
@@ -384,7 +384,7 @@ function closeGame(){
   try{screen.orientation.unlock()}catch(e){}
 }
 document.addEventListener('fullscreenchange',()=>{if(gOpen&&!document.fullscreenElement)closeGame()});
-$('gStart').onclick=openGame;$('gx').onclick=closeGame;
+$('gStart').onclick=()=>{if(window.open3D&&window.THREE)open3D(LOC[loc].lat,LOC[loc].lon);else openGame()};$('gx').onclick=closeGame;
 $('gRem').onclick=()=>{remoteOn=!remoteOn;$('gRem').textContent='Remote (রিমোট) '+(remoteOn?'ON':'OFF');$('gsL').style.visibility=$('gsR').style.visibility=remoteOn?'visible':'hidden'};
 $('gSen').onclick=()=>{sensorOn=!sensorOn;$('gSen').textContent='Sensor (সেন্সর) '+(sensorOn?'ON':'OFF')};
 $('gTake').onclick=()=>$('bTake').onclick();$('gMan').onclick=()=>$('bMan').onclick();
@@ -535,5 +535,7 @@ zi.onclick=()=>zi.classList.toggle('big');$('zx').onclick=()=>{z.hidden=true};
 
 try{if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claude\.ai|claudeusercontent/.test(location.host)){navigator.serviceWorker.register('sw.js').catch(()=>{})}}catch(e){}
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="game3d.js"></script>
 </body>
 </html>
