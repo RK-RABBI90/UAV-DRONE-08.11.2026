@@ -44,12 +44,21 @@ function snippet(p,terms){
 function loadJson(){
   return jsonP||(jsonP=fetch(JSON_,{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error('no json');return r.json()}).then(j=>{SRC=j.source;PAGES=prep(j);total=Math.max(total,PAGES.length);return PAGES}).catch(e=>{jsonP=null;throw e}));
 }
+function setStat(t,bad){['bPg','bvL'].forEach(id=>{const e=$(id);if(e){e.innerHTML=t||'';e.style.color=bad?'var(--bad)':'var(--muted)'}})}
+function errMsg(e){const m=(e&&(e.message||e.name))||String(e);
+  if(/Missing|404/i.test(m))return 'UAV_BOOK.pdf repo-te nei ba nam thik na (boro-hater akkhor dekho).';
+  if(!window.pdfjsLib||/pdf\.js/i.test(m))return 'pdf.js (cdnjs) load hoyni. Internet (ইন্টারনেট) check koro.';
+  return m}
 function loadPdf(){
   return docP||(docP=new Promise((ok,no)=>{
-    const done=()=>{pdfjsLib.GlobalWorkerOptions.workerSrc=WORKER;pdfjsLib.getDocument(PDF).promise.then(d=>{doc=d;total=d.numPages;ok(d)},no)};
-    if(window.pdfjsLib)return done();
-    const s=document.createElement('script');s.src=PDFJS;s.onload=done;s.onerror=no;document.head.appendChild(s);
-  }).catch(e=>{docP=null;throw e}));
+    const go=()=>{pdfjsLib.GlobalWorkerOptions.workerSrc=WORKER;
+      const t=pdfjsLib.getDocument(PDF);
+      t.onProgress=p=>{if(p.total)setStat('PDF (পিডিএফ) load hocche… '+Math.round(p.loaded/p.total*100)+'% ('+(p.total/1048576).toFixed(1)+' MB)')};
+      t.promise.then(d=>{doc=d;total=d.numPages;setStat('');ok(d)},no)};
+    if(window.pdfjsLib)return go();
+    setStat('PDF (পিডিএফ) viewer (ভিউয়ার) load hocche…');
+    const s=document.createElement('script');s.src=PDFJS;s.onload=go;s.onerror=()=>no(new Error('pdf.js load hoyni'));document.head.appendChild(s);
+  }).catch(e=>{docP=null;setStat('⚠ '+esc(errMsg(e))+' <button id="bRetry">Retry (রিট্রাই)</button>',true);throw e}));
 }
 
 /* ---------- viewer ---------- */
@@ -75,28 +84,32 @@ function updText(){
   box.innerHTML=p?'<b>Text (টেক্সট) লেখা – page (পেজ) '+cur+'</b><br>'+markup(p.t,hl).replace(/\n/g,'<br>'):'Text (টেক্সট) index (ইনডেক্স) load hoyni.';
 }
 
-/* ---------- thumbnails ---------- */
-const Q=[];let busy=false,io=null;
+/* ---------- page list / thumbnails ---------- */
+let thumbs=false;const Q=[];let busy=false,io=null;
 async function pump(){
   if(busy)return;busy=true;
   while(Q.length){const b=Q.shift(),c=b.querySelector('canvas');
     try{const d=await loadPdf(),p=await d.getPage(+b.dataset.n),v0=p.getViewport({scale:1}),vp=p.getViewport({scale:130/v0.width*(devicePixelRatio||1)});
-      c.width=vp.width;c.height=vp.height;await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise}catch(e){}}
+      c.width=vp.width;c.height=vp.height;await p.render({canvasContext:c.getContext('2d'),viewport:vp}).promise}catch(e){Q.length=0;break}}
   busy=false;
 }
+function firstLine(p){const l=p.t.split('\n').map(x=>x.trim()).filter(x=>x.length>3);return(l[1]||l[0]||'').slice(0,90)}
 function buildGrid(){
-  const g=$('bGrid');if(g.dataset.done)return;g.dataset.done=1;
-  const n=total||PAGES.length;if(!n)return;
-  g.innerHTML=Array.from({length:n},(_,i)=>'<button data-n="'+(i+1)+'"><canvas></canvas><span>'+(i+1)+'</span></button>').join('');
-  io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);Q.push(e.target);pump()}}),{rootMargin:'300px'});
-  g.querySelectorAll('button').forEach(b=>io.observe(b));
+  const g=$('bGrid'),n=total||PAGES.length;if(!n)return;
+  if(io){io.disconnect();io=null}Q.length=0;g.className=thumbs?'gt':'gl';
+  if(thumbs){
+    g.innerHTML=Array.from({length:n},(_,i)=>'<button data-n="'+(i+1)+'"><div class="th"><canvas></canvas></div><span>'+(i+1)+'</span></button>').join('');
+    io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);Q.push(e.target);pump()}}),{rootMargin:'300px'});
+    g.querySelectorAll('button').forEach(b=>io.observe(b));
+  }else g.innerHTML=Array.from({length:n},(_,i)=>'<button class="bl" data-n="'+(i+1)+'"><b>'+(i+1)+'</b><span>'+esc(PAGES[i]?firstLine(PAGES[i]):'')+'</span></button>').join('');
+  $('bTog').textContent=thumbs?'📄 List (লিস্ট) তালিকা':'🖼 Thumbnails (থাম্বনেইল) ছবি';
 }
 
 /* ---------- UI ---------- */
 function runSearch(){
   const val=$('bq').value.trim(),res=$('bRes'),info=$('bInfo');
-  if(!val){res.innerHTML='';$('bGrid').hidden=false;info.textContent=statusText();return}
-  $('bGrid').hidden=true;
+  if(!val){res.innerHTML='';$('bGrid').hidden=false;$('bTog').hidden=false;info.textContent=statusText();return}
+  $('bGrid').hidden=true;$('bTog').hidden=true;
   const r=searchIn(PAGES,val),terms=norm(val).split(' ');
   info.textContent=r.length+' page (পেজ) pawa gelo · '+statusText();
   res.innerHTML=r.length?r.slice(0,60).map(p=>'<div class="br" data-n="'+p.n+'"><b>Page (পেজ) '+p.n+'</b><div>'+snippet(p,terms)+'</div></div>').join(''):'<div class="br">Kichu pawa jay ni. Onno shobdo diye khujo, ba English term (টার্ম) likho.</div>';
@@ -108,15 +121,15 @@ function statusText(){
 }
 function build(){
   const st=document.createElement('style');
-  st.textContent='.tabs{overflow-x:auto}.tabs button{flex:1 0 auto;white-space:nowrap}#book #bq{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:15px Sora,system-ui,sans-serif}#book .bi{color:var(--muted);font-size:12px;margin:8px 0;line-height:1.5}#book .br{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;line-height:1.55}#book .br b{color:var(--accent)}#book mark,#bvv mark{background:#ffe066;color:#000;border-radius:3px}#bGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}#bGrid button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:4px;color:var(--ink);font:600 12px Sora,sans-serif}#bGrid canvas{width:100%;display:block;background:#fff;min-height:90px}#bvv{position:fixed;inset:0;z-index:150;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}#bvv .bar{display:flex;gap:6px;align-items:center;padding:8px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap}#bvv .bar button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:7px 11px;font:600 13px Sora,sans-serif}#bvv .bar button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}#bvn{width:60px;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 13px Sora,sans-serif}#bvs{flex:1;overflow:auto;padding:4px;-webkit-overflow-scrolling:touch}#bvc{display:block;margin:0 auto;background:#fff}#bvx{padding:10px 12px;margin:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;line-height:1.6;font-size:14px}#bvE{padding:14px;color:var(--bad)}';
+  st.textContent='.tabs{overflow-x:auto}.tabs button{flex:1 0 auto;white-space:nowrap}#book #bq{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:15px Sora,system-ui,sans-serif}#book .bi{color:var(--muted);font-size:12px;margin:8px 0;line-height:1.5}#book .br{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;line-height:1.55}#book .br b{color:var(--accent)}#book mark,#bvv mark{background:#ffe066;color:#000;border-radius:3px}#bGrid.gt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}#bGrid button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:4px;color:var(--ink);font:600 12px Sora,sans-serif}#bGrid .th{position:relative;aspect-ratio:612/792;background:#fff;border-radius:4px;overflow:hidden}#bGrid .th canvas{position:absolute;left:0;top:0;width:100%;height:100%}#bGrid.gl{display:flex;flex-direction:column;gap:6px}#bGrid .bl{display:flex;gap:10px;align-items:baseline;text-align:left;padding:10px 12px;width:100%}#bGrid .bl b{color:var(--accent);min-width:34px}#bGrid .bl span{font-weight:400;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#bTog,#bRetry{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 10px;font:600 12px Sora,sans-serif}#bvv{position:fixed;inset:0;z-index:150;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}#bvv .bar{display:flex;gap:6px;align-items:center;padding:8px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap}#bvv .bar button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:7px 11px;font:600 13px Sora,sans-serif}#bvv .bar button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}#bvn{width:60px;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:600 13px Sora,sans-serif}#bvs{flex:1;overflow:auto;padding:4px;-webkit-overflow-scrolling:touch}#bvc{display:block;margin:0 auto;background:#fff}#bvx{padding:10px 12px;margin:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;line-height:1.6;font-size:14px}#bvE{padding:14px;color:var(--bad)}';
   document.head.appendChild(st);
   const tabs=document.querySelector('.tabs');t4=document.createElement('button');
   t4.setAttribute('role','tab');t4.id='t4';t4.setAttribute('aria-selected','false');t4.textContent='Book (বুক) বই';tabs.appendChild(t4);
   sec=document.createElement('section');sec.id='book';sec.hidden=true;
-  sec.innerHTML='<input id="bq" type="search" placeholder="Book (বুক) search (সার্চ) খোঁজো: UAV, ড্রোন, Payload…" autocomplete="off" autocapitalize="off"><div class="bi" id="bInfo"></div><div id="bRes"></div><div id="bGrid"></div>';
+  sec.innerHTML='<input id="bq" type="search" placeholder="Book (বুক) search (সার্চ) খোঁজো: UAV, ড্রোন, Payload…" autocomplete="off" autocapitalize="off"><div class="bi" id="bInfo"></div><div class="bi" id="bPg"></div><button id="bTog">🖼 Thumbnails (থাম্বনেইল) ছবি</button><div id="bRes"></div><div id="bGrid" class="gl"></div>';
   (document.getElementById('dict')||document.getElementById('learn')).after(sec);
   const v=document.createElement('div');v.id='bvv';v.hidden=true;
-  v.innerHTML='<div class="bar"><button id="bvX">✕ Close (ক্লোজ)</button><button id="bvP">◀</button><input id="bvn" type="number" min="1" inputmode="numeric"><span id="bvt"></span><button id="bvN">▶</button><button id="bvZ">🔍 Zoom (জুম)</button><button id="bvT" class="on">Text (টেক্সট)</button></div><div id="bvs"><div id="bvE" hidden>PDF (পিডিএফ) khulche na. <b>UAV_BOOK.pdf</b> GitHub-e upload hoyeche ki? Internet (ইন্টারনেট) check koro. <a href="UAV_BOOK.pdf" target="_blank">PDF (পিডিএফ) shorashori khulo</a></div><canvas id="bvc"></canvas><div id="bvx"></div></div>';
+  v.innerHTML='<div class="bar"><button id="bvX">✕ Close (ক্লোজ)</button><button id="bvP">◀</button><input id="bvn" type="number" min="1" inputmode="numeric"><span id="bvt"></span><button id="bvN">▶</button><button id="bvZ">🔍 Zoom (জুম)</button><button id="bvT" class="on">Text (টেক্সট)</button></div><div id="bvs"><div class="bi" id="bvL" style="padding:8px"></div><div id="bvE" hidden>PDF (পিডিএফ) khulche na. <b>UAV_BOOK.pdf</b> GitHub-e upload hoyeche ki? Internet (ইন্টারনেট) check koro. <a href="UAV_BOOK.pdf" target="_blank">PDF (পিডিএফ) shorashori khulo</a></div><canvas id="bvc"></canvas><div id="bvx"></div></div>';
   document.body.appendChild(v);
   $('bvX').onclick=()=>{v.hidden=true};
   $('bvP').onclick=()=>showPage(cur-1);$('bvN').onclick=()=>showPage(cur+1);
@@ -125,6 +138,8 @@ function build(){
   $('bvT').onclick=()=>{showTxt=!showTxt;$('bvT').className=showTxt?'on':'';updText()};
   let timer=0;$('bq').oninput=()=>{clearTimeout(timer);timer=setTimeout(runSearch,150)};
   $('bRes').onclick=e=>{const r=e.target.closest('.br');if(r&&r.dataset.n)showPage(+r.dataset.n,JSON.parse($('bRes').dataset.terms||'[]'))};
+  $('bTog').onclick=()=>{thumbs=!thumbs;buildGrid()};
+  document.addEventListener('click',e=>{if(e.target.id==='bRetry'){docP=null;setStat('Retry (রিট্রাই)…');if(!v.hidden)showPage(cur);else if(thumbs)buildGrid()}});
   $('bGrid').onclick=e=>{const b=e.target.closest('button');if(b)showPage(+b.dataset.n,[])};
   addEventListener('resize',()=>{if(!v.hidden)showPage(cur)});
   ['t1','t2','t3'].forEach(id=>{const b=$(id);if(b)b.addEventListener('click',()=>{sec.hidden=true;t4.setAttribute('aria-selected','false')})});
@@ -134,7 +149,7 @@ function build(){
     t4.setAttribute('aria-selected','true');sec.hidden=false;
     $('bInfo').textContent=statusText();
     loadJson().then(()=>{total=Math.max(total,PAGES.length);$('bInfo').textContent=statusText();buildGrid();if($('bq').value)runSearch()})
-      .catch(()=>{$('bInfo').textContent='book.json pawa jay ni. GitHub-e upload koro (build_index.py chalao).';loadPdf().then(buildGrid).catch(()=>{})});
+      .catch(()=>{$('bInfo').textContent='book.json pawa jay ni. GitHub-e upload koro (build_index.py chalao).';buildGrid()});
   };
 }
 window.__book={norm,skel,searchIn,prep};
